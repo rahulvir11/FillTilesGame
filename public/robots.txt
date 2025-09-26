@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://tiles-connect.vercel.app/sitemap.xml
+
+# Crawl-delay for well-behaved bots
+Crawl-delay: 1
+
+# Disallow common non-public directories
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+
+# Allow specific files that are beneficial for SEO
+Allow: /_next/static/
+Allow: /favicon.ico
+Allow: /manifest.json
