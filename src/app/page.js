@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic'
 
 export default function Home() {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
-  
+  // Instructions modal state
+  const [showInstructions, setShowInstructions] = useState(false);
   const currentLevel = levels[currentLevelIndex];
   const isLastLevel = currentLevelIndex >= levels.length - 1;
 
@@ -109,6 +110,239 @@ export default function Home() {
           </p>
         </div>
       </main>
+        {/* Instructions Button */}
+          <button
+            onClick={() => setShowInstructions(true)}
+            style={{
+              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "18px",
+              backdropFilter: "blur(10px)",
+              transition: "all 0.3s ease",
+              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+              position: "fixed",
+            top: "10px",
+            right: "10px",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))";
+              e.target.style.transform = "scale(1.1)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))";
+              e.target.style.transform = "scale(1)";
+            }}
+          >
+            ❓
+          </button>
+          {/* Instructions Modal */}
+      {showInstructions && (
+        <div
+          style={{
+            position: "fixed",
+            top: "0",
+            right: "0",
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1001,
+            animation: "modalFadeIn 0.3s ease-out",
+          }}
+          onClick={() => setShowInstructions(false)}
+        >
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(20, 20, 40, 0.95), rgba(60, 30, 80, 0.95))",
+              backdropFilter: "blur(30px)",
+              padding: "40px",
+              borderRadius: "25px",
+              textAlign: "left",
+              color: "#fff",
+              maxWidth: "500px",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              border: "2px solid rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              animation: "modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              position: "relative"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowInstructions(false)}
+              style={{
+                position: "fixed",
+                top: "15px",
+                right: "15px",
+                background: "rgba(255, 255, 255, 0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "50%",
+                width: "35px",
+                height: "35px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontSize: "18px",
+                transition: "all 0.3s ease"
+              }}
+              onMouseOver={(e) => {
+                e.target.style.background = "rgba(255, 255, 255, 0.2)";
+                e.target.style.transform = "scale(1.1)";
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = "rgba(255, 255, 255, 0.1)";
+                e.target.style.transform = "scale(1)";
+              }}
+            >
+              ×
+            </button>
+
+            {/* Title */}
+            <h2 style={{
+              margin: "0 0 25px 0",
+              fontSize: "28px",
+              fontWeight: "bold",
+              background: "linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B, #4ECDC4)",
+              backgroundSize: "300% 300%",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              animation: "gradientShift 3s ease infinite",
+              textAlign: "center"
+            }}>
+              🎮 How to Play
+            </h2>
+
+            {/* Game Instructions */}
+            <div style={{ lineHeight: "1.6" }}>
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{
+                  color: "#00ff88",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  🎯 Objective
+                </h3>
+                <p style={{ margin: "0", opacity: 0.9 }}>
+                  Connect all playable tiles by creating a continuous path. Fill every available space to complete the level!
+                </p>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{
+                  color: "#4ecdc4",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  🖱️ Controls
+                </h3>
+                <div style={{ margin: "0", opacity: 0.9 }}>
+                  <p style={{ margin: "5px 0" }}>• <strong>Desktop:</strong> Click on adjacent tiles or use arrow keys</p>
+                  <p style={{ margin: "5px 0" }}>• <strong>Mobile:</strong> Tap and drag across tiles</p>
+                  <p style={{ margin: "5px 0" }}>• <strong>Undo:</strong> Click on a previous tile in your path</p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{
+                  color: "#ffaa00",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  🧩 Game Elements
+                </h3>
+                <div style={{ margin: "0", opacity: 0.9 }}>
+                  <p style={{ margin: "5px 0", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "20px" }}>🎯</span> 
+                    <strong>Start Tile:</strong> Your starting point (green with target icon)
+                  </p>
+                  <p style={{ margin: "5px 0", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{
+                      width: "20px",
+                      height: "20px",
+                      background: "linear-gradient(135deg, hsl(320, 70%, 60%), hsl(340, 80%, 45%))",
+                      borderRadius: "4px",
+                      display: "inline-block"
+                    }}></span>
+                    <strong>Path Tiles:</strong> Connected tiles with numbers showing order
+                  </p>
+                  <p style={{ margin: "5px 0", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "20px" }}>🚫</span>
+                    <strong>Blocked Tiles:</strong> Cannot be used in your path
+                  </p>
+                  <p style={{ margin: "5px 0", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{
+                      width: "6px",
+                      height: "20px",
+                      background: "linear-gradient(180deg, hsl(330, 80%, 60%), hsl(350, 90%, 50%))",
+                      borderRadius: "3px",
+                      display: "inline-block",
+                      boxShadow: "0 0 10px hsl(330, 80%, 60%)"
+                    }}></span>
+                    <strong>Connectors:</strong> Visual links between connected tiles
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{
+                  color: "#ff6b6b",
+                  fontSize: "18px",
+                  marginBottom: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px"
+                }}>
+                  💡 Tips & Strategy
+                </h3>
+                <div style={{ margin: "0", opacity: 0.9 }}>
+                  <p style={{ margin: "5px 0" }}>• Plan your route before starting</p>
+                  <p style={{ margin: "5px 0" }}>• You can only move to adjacent tiles (up, down, left, right)</p>
+                  <p style={{ margin: "5px 0" }}>• Click on earlier tiles in your path to backtrack</p>
+                  <p style={{ margin: "5px 0" }}>• Try to avoid creating dead ends</p>
+                  <p style={{ margin: "5px 0" }}>• Complete faster for better scores!</p>
+                </div>
+              </div>
+
+              <div style={{
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
+                padding: "20px",
+                borderRadius: "15px",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                textAlign: "center",
+                marginTop: "25px"
+              }}>
+                <p style={{ margin: "0", fontSize: "16px", opacity: 0.9 }}>
+                  <strong>🎉 Good luck and have fun!</strong>
+                </p>
+                <p style={{ margin: "10px 0 0 0", fontSize: "14px", opacity: 0.7 }}>
+                  Click anywhere outside this box to close
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

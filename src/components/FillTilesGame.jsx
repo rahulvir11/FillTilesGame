@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextLevel, onRestart }) => {
   const [path, setPath] = useState([{ row: start.row, col: start.col }]);
@@ -10,6 +10,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   // Audio refs for sound effects
   const connectSoundRef = useRef(null);
   const winSoundRef = useRef(null);
+  const gridRef = useRef(null);
 
   // Initialize audio files
   useEffect(() => {
@@ -55,6 +56,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   // Touch and drag state for mobile
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState(null);
+  
+  
 
   // check helpers
   const isDisabled = (r, c) =>
@@ -63,62 +66,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   const findInPath = (r, c) =>
     path.findIndex((tile) => tile.row === r && tile.col === c);
 
-  // keyboard movement
-  const handleKeyDown = (e) => {
-    const { row, col } = path[path.length - 1];
-    let newPos = null;
-
-    if (e.key === "ArrowUp") newPos = { row: row - 1, col };
-    if (e.key === "ArrowDown") newPos = { row: row + 1, col };
-    if (e.key === "ArrowLeft") newPos = { row, col: col - 1 };
-    if (e.key === "ArrowRight") newPos = { row, col: col + 1 };
-
-    if (!newPos) return;
-    handleMove(newPos.row, newPos.col);
-  };
-
-  // Touch event handlers for mobile support
-  const handleTouchStart = (e, r, c) => {
-    e.preventDefault(); // Prevent scrolling and zooming
-    if (gameWon) return;
-    
-    setIsDragging(true);
-    setDragStartPos({ row: r, col: c });
-    handleMove(r, c);
-  };
-
-  const handleTouchMove = (e) => {
-    e.preventDefault(); // Prevent scrolling
-    if (!isDragging || gameWon) return;
-
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    if (element && element.dataset.row && element.dataset.col) {
-      const r = parseInt(element.dataset.row);
-      const c = parseInt(element.dataset.col);
-      
-      // Only move if we're on a different tile
-      const lastPos = path[path.length - 1];
-      if (r !== lastPos.row || c !== lastPos.col) {
-        handleMove(r, c);
-      }
-    }
-  };
-
-  const handleTouchEnd = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    setDragStartPos(null);
-  };
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  });
-
   // main move logic (keyboard + mouse)
-  const handleMove = (r, c) => {
+  const handleMove = useCallback((r, c) => {
     if (gameWon) return; // Prevent moves after winning
     
     // boundaries
@@ -147,7 +96,89 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
       // already in path → undo forward
       setPath(path.slice(0, index + 1));
     }
-  };
+  }, [gameWon, rows, cols, disabledTiles, path]);
+
+  // keyboard movement
+  const handleKeyDown = useCallback((e) => {
+    const { row, col } = path[path.length - 1];
+    let newPos = null;
+
+    if (e.key === "ArrowUp") newPos = { row: row - 1, col };
+    if (e.key === "ArrowDown") newPos = { row: row + 1, col };
+    if (e.key === "ArrowLeft") newPos = { row, col: col - 1 };
+    if (e.key === "ArrowRight") newPos = { row, col: col + 1 };
+
+    if (!newPos) return;
+    handleMove(newPos.row, newPos.col);
+  }, [path, handleMove]);
+
+  // Touch event handlers for mobile support
+  const handleTouchStart = useCallback((e) => {
+    if (e.cancelable) {
+      e.preventDefault(); // Prevent scrolling and zooming only if event is cancelable
+    }
+    if (gameWon) return;
+    
+    const target = e.target.closest('[data-row]');
+    if (!target) return;
+    
+    const r = parseInt(target.dataset.row);
+    const c = parseInt(target.dataset.col);
+    
+    setIsDragging(true);
+    setDragStartPos({ row: r, col: c });
+    handleMove(r, c);
+  }, [gameWon, handleMove]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (e.cancelable) {
+      e.preventDefault(); // Prevent scrolling only if event is cancelable
+    }
+    if (!isDragging || gameWon) return;
+
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    if (element && element.dataset.row && element.dataset.col) {
+      const r = parseInt(element.dataset.row);
+      const c = parseInt(element.dataset.col);
+      
+      // Only move if we're on a different tile
+      const lastPos = path[path.length - 1];
+      if (r !== lastPos.row || c !== lastPos.col) {
+        handleMove(r, c);
+      }
+    }
+  }, [isDragging, gameWon, path, handleMove]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+    setIsDragging(false);
+    setDragStartPos(null);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    
+    // Add proper touch event listeners with passive: false to allow preventDefault
+    const gridElement = gridRef.current;
+    if (gridElement) {
+      gridElement.addEventListener("touchstart", handleTouchStart, { passive: false });
+      gridElement.addEventListener("touchmove", handleTouchMove, { passive: false });
+      gridElement.addEventListener("touchend", handleTouchEnd, { passive: false });
+    }
+    
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (gridElement) {
+        gridElement.removeEventListener("touchstart", handleTouchStart);
+        gridElement.removeEventListener("touchmove", handleTouchMove);
+        gridElement.removeEventListener("touchend", handleTouchEnd);
+      }
+    };
+  }, [handleKeyDown, handleTouchStart, handleTouchMove, handleTouchEnd]); // Add dependencies
 
   // Format time for display
   const formatTime = (seconds) => {
@@ -192,7 +223,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative" , width: "100%", height: "100vh", boxSizing: "border-box" }}>
       {/* Game Stats Bar */}
       <div style={{
         background: "linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(60, 30, 80, 0.95))",
@@ -220,23 +251,25 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             </span>
           </div>
         </div>
-        <div style={{ 
-          background: "linear-gradient(45deg, #ff6b6b, #4ecdc4)",
-          backgroundClip: "text",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          fontSize: "16px",
-          fontWeight: "bold"
-        }}>
-          Level {currentLevel || 1}
+        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+        
+          <div style={{ 
+            background: "linear-gradient(45deg, #ff6b6b, #4ecdc4)",
+            backgroundClip: "text",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            fontSize: "16px",
+            fontWeight: "bold"
+          }}>
+            Level {currentLevel || 1}
+          </div>
         </div>
       </div>
 
       {/* Game Grid */}
       <div
+        ref={gridRef}
         className="grid"
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, 50px)`,
@@ -334,7 +367,6 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                 data-row={r}
                 data-col={c}
                 onClick={() => handleMove(r, c)}
-                onTouchStart={(e) => handleTouchStart(e, r, c)}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 style={{
@@ -453,13 +485,14 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0, 0, 0, 0.85)",
+            background: "transparent",
             backdropFilter: "blur(10px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1000,
             animation: "modalFadeIn 0.5s ease-out",
+           borderRadius: "20px",
           }}
         >
           {/* Floating particles background */}
@@ -492,8 +525,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
           >
             {/* Celebration Animation */}
             <div style={{ 
-              fontSize: "72px", 
-              marginBottom: "20px",
+              fontSize: "50px", 
+              marginBottom: "10px",
               animation: "celebrationBounce 2s infinite",
               filter: "drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))"
             }}>
@@ -502,8 +535,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             
             {/* Animated Title */}
             <h2 style={{ 
-              margin: "0 0 15px 0", 
-              fontSize: "36px",
+              margin: "0 0 10px 0", 
+              fontSize: "24px",
               fontWeight: "bold",
               background: "linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B, #4ECDC4)",
               backgroundSize: "300% 300%",
@@ -564,17 +597,17 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             </div>
             
             {/* Enhanced Action Buttons */}
-            <div style={{ display: "flex", gap: "20px", justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
               <button
                 onClick={onRestart}
                 style={{
                   background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
                   color: "#fff",
                   border: "2px solid rgba(255, 255, 255, 0.2)",
-                  padding: "15px 30px",
+                  padding: "5px 10px",
                   borderRadius: "50px",
                   cursor: "pointer",
-                  fontSize: "16px",
+                  fontSize: "12px",
                   fontWeight: "bold",
                   backdropFilter: "blur(20px)",
                   transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -600,10 +633,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                     background: "linear-gradient(135deg, #ff6b6b, #4ecdc4)",
                     color: "#fff",
                     border: "none",
-                    padding: "15px 30px",
+                    padding: "8px 8px",
                     borderRadius: "50px",
                     cursor: "pointer",
-                    fontSize: "16px",
+                    fontSize: "12px",
                     fontWeight: "bold",
                     boxShadow: "0 8px 30px rgba(255, 107, 107, 0.4)",
                     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -626,6 +659,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
           </div>
         </div>
       )}
+
+      
 
       {/* Enhanced CSS Animations */}
       <style jsx>{`
