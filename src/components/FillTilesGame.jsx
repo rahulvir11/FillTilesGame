@@ -52,6 +52,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
     setCompletionTime(0);
   }, [start, rows, cols]);
 
+  // Touch and drag state for mobile
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState(null);
+
   // check helpers
   const isDisabled = (r, c) =>
     disabledTiles.some((tile) => tile.row === r && tile.col === c);
@@ -71,6 +75,41 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
 
     if (!newPos) return;
     handleMove(newPos.row, newPos.col);
+  };
+
+  // Touch event handlers for mobile support
+  const handleTouchStart = (e, r, c) => {
+    e.preventDefault(); // Prevent scrolling and zooming
+    if (gameWon) return;
+    
+    setIsDragging(true);
+    setDragStartPos({ row: r, col: c });
+    handleMove(r, c);
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault(); // Prevent scrolling
+    if (!isDragging || gameWon) return;
+
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    if (element && element.dataset.row && element.dataset.col) {
+      const r = parseInt(element.dataset.row);
+      const c = parseInt(element.dataset.col);
+      
+      // Only move if we're on a different tile
+      const lastPos = path[path.length - 1];
+      if (r !== lastPos.row || c !== lastPos.col) {
+        handleMove(r, c);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    setDragStartPos(null);
   };
 
   useEffect(() => {
@@ -196,6 +235,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
       {/* Game Grid */}
       <div
         className="grid"
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, 50px)`,
@@ -206,6 +247,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
           borderRadius: "25px",
           border: "2px solid rgba(255, 255, 255, 0.1)",
           boxShadow: "0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+          touchAction: "none", // Prevent default touch behaviors
         }}
       >
         {Array.from({ length: rows }).map((_, r) =>
@@ -289,10 +331,20 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             return (
               <div
                 key={`${r}-${c}`}
+                data-row={r}
+                data-col={c}
                 onClick={() => handleMove(r, c)}
+                onTouchStart={(e) => handleTouchStart(e, r, c)}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
-                style={tileStyle}
+                style={{
+                  ...tileStyle,
+                  touchAction: "none", // Prevent scrolling on touch
+                  userSelect: "none",  // Prevent text selection
+                  WebkitUserSelect: "none",
+                  WebkitTouchCallout: "none", // Disable iOS callout
+                  WebkitTapHighlightColor: "transparent", // Remove tap highlight
+                }}
               >
                 {/* Tile Content */}
                 {type === "start" && "🎯"}
