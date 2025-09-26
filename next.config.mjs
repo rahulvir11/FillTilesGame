@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Production optimizations
+  // Basic production optimizations
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
@@ -25,22 +25,6 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin'
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self'",
-              "media-src 'self'"
-            ].join('; ')
           }
         ]
       }
@@ -51,41 +35,7 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
-    dangerouslyAllowSVG: false,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-
-  // Experimental features for better performance
-  experimental: {
-    optimizeCss: true,
-    gzipSize: true,
-  },
-
-  // Production-only optimizations
-  ...(process.env.NODE_ENV === 'production' && {
-    // Enable static optimization
-    trailingSlash: false,
-    
-    // Asset optimization
-    assetPrefix: process.env.ASSET_PREFIX || '',
-    
-    // Webpack optimizations
-    webpack: (config, { dev, isServer }) => {
-      if (!dev && !isServer) {
-        // Enable tree shaking
-        config.optimization.usedExports = true;
-        config.optimization.sideEffects = false;
-        
-        // Bundle analyzer (uncomment to analyze bundle size)
-        // const BundleAnalyzer = require('@next/bundle-analyzer')({
-        //   enabled: process.env.ANALYZE === 'true',
-        // });
-        // return BundleAnalyzer(config);
-      }
-      return config;
-    },
-  }),
 
   // Environment variables for production
   env: {

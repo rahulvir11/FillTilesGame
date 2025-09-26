@@ -94,7 +94,7 @@ export default function Home() {
         {isLastLevel && (
           <footer className="mt-6 text-center" role="contentinfo">
             <p className="text-yellow-300 text-lg font-semibold" role="status">
-              🏆 Final Level! You're almost there!
+              🏆 Final Level! You&apos;re almost there!
             </p>
           </footer>
         )}
