@@ -78,7 +78,7 @@ export const levels = [
     name: "Level 8 - Expert Challenge",
     rows: 8,
     cols: 5,
-    start: { row: 6, col: 0 },
+    start: { row: 7, col: 3 },
     disabledTiles: [
       { row: 1, col: 3 },
       { row: 2, col: 0 },
