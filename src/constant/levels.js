@@ -1,44 +1,121 @@
 export const levels = [
   {
     name: "Level 1 - Getting Started",
-    rows: 5,
-    cols: 5,
+    rows: 1,
+    cols: 2,
     start: { row: 0, col: 0 },
     disabledTiles: [
-    
     ],
   },
   {
-    name: "Level 2 - Zigzag Challenge",
+    name: "Level 2 - By Tzomby",
     rows: 4,
     cols: 4,
-    start: { row: 3, col: 2 },
+    start: { row: 2, col: 1 },
     disabledTiles: [
-      { row: 1, col: 5 },
-     
-      { row: 2, col: 5 },
-      { row: 3, col: 1 },
+      { row: 0, col: 0 },
+      { row: 1, col: 2 },
     ],
   },
   {
-    name: "Level 3 - The Maze",
+    name: "Level 3 - Zigzag Challenge",
     rows: 3,
     cols: 3,
-    start: { row: 2, col: 2 },
+    start: { row: 1, col: 2 },
     disabledTiles: [
-      { row: 3, col: 2 },
-     
-     
+      { row: 1, col: 1 },
     ],
   },
   {
-    name: "Level 4 - Expert Challenge",
+    name: "Level 4 - The Maze",
     rows: 4,
     cols: 3,
-    start: { row: 4, col: 2 },
+    start: { row: 3, col: 1 },
+    disabledTiles: [
+      { row: 0, col: 2 },
+      { row: 3, col: 0 },
+    ],
+  },
+  {
+    name: "Level 5 - Expert Challenge",
+    rows: 7,
+    cols: 4,
+    start: { row: 6, col: 0 },
+    disabledTiles: [
+      { row: 2, col: 2 },
+      { row: 3, col: 2 },
+      { row: 5, col: 2 },
+      { row: 5, col: 3 },
+      { row: 6, col: 3 },
+    ],
+  },
+  {
+    name: "Level 6 - Impossible Challenge",
+    rows: 5,
+    cols: 5,
+    start: { row: 3, col: 3 },
+    disabledTiles: [
+      { row: 2, col: 3 },
+      { row: 2, col: 4 },
+      { row: 4, col: 0 },
+    ],
+  },
+  {
+    name: "Level 7 - Good Luck 😈",
+    rows: 7,
+    cols: 5,
+    start: { row: 5, col: 1 },
+    disabledTiles: [
+      { row: 0, col: 0 },
+      { row: 2, col: 2 },
+      { row: 3, col: 0 },
+      { row: 3, col: 4 },
+      { row: 4, col: 4 },
+      { row: 6, col: 1 },
+    ],
+  },
+  {
+    name: "Level 8 - Expert Challenge",
+    rows: 8,
+    cols: 5,
+    start: { row: 6, col: 0 },
     disabledTiles: [
       { row: 1, col: 3 },
-      { row: 4, col: 1 },
+      { row: 2, col: 0 },
+      { row: 3, col: 2 },
+      { row: 5, col: 4 },
+      { row: 6, col: 0 },
+      { row: 7, col: 2 },
+    ],
+  },
+  {
+    name: "Level 9 - awesome challenge",
+    rows: 7,
+    cols: 6,
+    start: { row: 6, col: 0 },
+    disabledTiles: [
+      { row: 0, col: 3 },
+      { row: 1, col: 5 },
+      { row: 2, col: 5 },
+      { row: 4, col: 2 },
+      { row: 5, col: 4 },
+      { row: 6, col: 2 },
+    ],
+  },
+  {
+    name: "Level 10 - Ultimate Challenge",
+    rows: 8,
+    cols: 6,
+    start: { row: 6, col: 0 },
+    disabledTiles: [
+      { row: 1, col: 4 },
+      { row: 3, col: 1 },
+      { row: 4, col: 4 },
+      { row: 5, col: 0 },
+      { row: 6, col: 0 },
+      { row: 6, col: 1 },
+      { row: 6, col: 2 },
+      { row: 7, col: 3 },
     ],
   },
 ];

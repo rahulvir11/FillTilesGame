@@ -1,30 +1,43 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
-const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextLevel, onRestart }) => {
+const FillTilesGame = ({
+  rows,
+  cols,
+  start,
+  disabledTiles,
+  currentLevel,
+  onNextLevel,
+  onGameReset
+}) => {
   const [path, setPath] = useState([{ row: start.row, col: start.col }]);
   const [startTime, setStartTime] = useState(Date.now());
   const [gameWon, setGameWon] = useState(false);
   const [completionTime, setCompletionTime] = useState(0);
-  
+
   // Audio refs for sound effects
   const connectSoundRef = useRef(null);
   const winSoundRef = useRef(null);
   const gridRef = useRef(null);
-
+  const onRestart = useCallback(() => {
+    setPath([{ row: start.row, col: start.col }]);
+    setStartTime(Date.now());
+    setGameWon(false);
+    setCompletionTime(0);
+  }, [start]);
   // Initialize audio files
   useEffect(() => {
     // Create audio elements for the sound files
-    connectSoundRef.current = new Audio('/connect.mp3');
-    winSoundRef.current = new Audio('/victory.mp3');
-    
+    connectSoundRef.current = new Audio("/connect.mp3");
+    winSoundRef.current = new Audio("/victory.mp3");
+
     // Set volume levels
     connectSoundRef.current.volume = 0.3;
     winSoundRef.current.volume = 0.5;
-    
+
     // Preload the audio files
-    connectSoundRef.current.preload = 'auto';
-    winSoundRef.current.preload = 'auto';
+    connectSoundRef.current.preload = "auto";
+    winSoundRef.current.preload = "auto";
   }, []);
 
   // Check if game is won
@@ -40,7 +53,9 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
       setCompletionTime(Math.floor((Date.now() - startTime) / 1000));
       if (winSoundRef.current) {
         winSoundRef.current.currentTime = 0; // Reset to beginning
-        winSoundRef.current.play().catch(e => console.log('Victory sound failed to play:', e));
+        winSoundRef.current
+          .play()
+          .catch((e) => console.log("Victory sound failed to play:", e));
       }
     }
   }, [path, gameWon, startTime]);
@@ -56,8 +71,6 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   // Touch and drag state for mobile
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState(null);
-  
-  
 
   // check helpers
   const isDisabled = (r, c) =>
@@ -67,89 +80,103 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
     path.findIndex((tile) => tile.row === r && tile.col === c);
 
   // main move logic (keyboard + mouse)
-  const handleMove = useCallback((r, c) => {
-    if (gameWon) return; // Prevent moves after winning
-    
-    // boundaries
-    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
-    // blocked
-    if (isDisabled(r, c)) return;
+  const handleMove = useCallback(
+    (r, c) => {
+      if (gameWon) return; // Prevent moves after winning
 
-    const index = findInPath(r, c);
+      // boundaries
+      if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+      // blocked
+      if (isDisabled(r, c)) return;
 
-    if (index === -1) {
-      // not visited → add new step
-      const last = path[path.length - 1];
-      const isAdjacent =
-        (Math.abs(last.row - r) === 1 && last.col === c) ||
-        (Math.abs(last.col - c) === 1 && last.row === r);
+      const index = findInPath(r, c);
 
-      if (isAdjacent) {
-        setPath([...path, { row: r, col: c }]);
-        // Play connect sound
-        if (connectSoundRef.current) {
-          connectSoundRef.current.currentTime = 0; // Reset to beginning
-          connectSoundRef.current.play().catch(e => console.log('Connect sound failed to play:', e));
+      if (index === -1) {
+        // not visited → add new step
+        const last = path[path.length - 1];
+        const isAdjacent =
+          (Math.abs(last.row - r) === 1 && last.col === c) ||
+          (Math.abs(last.col - c) === 1 && last.row === r);
+
+        if (isAdjacent) {
+          setPath([...path, { row: r, col: c }]);
+          // Play connect sound
+          if (connectSoundRef.current) {
+            connectSoundRef.current.currentTime = 0; // Reset to beginning
+            connectSoundRef.current
+              .play()
+              .catch((e) => console.log("Connect sound failed to play:", e));
+          }
         }
+      } else {
+        // already in path → undo forward
+        setPath(path.slice(0, index + 1));
       }
-    } else {
-      // already in path → undo forward
-      setPath(path.slice(0, index + 1));
-    }
-  }, [gameWon, rows, cols, disabledTiles, path]);
+    },
+    [gameWon, rows, cols, disabledTiles, path]
+  );
 
   // keyboard movement
-  const handleKeyDown = useCallback((e) => {
-    const { row, col } = path[path.length - 1];
-    let newPos = null;
+  const handleKeyDown = useCallback(
+    (e) => {
+      const { row, col } = path[path.length - 1];
+      let newPos = null;
 
-    if (e.key === "ArrowUp") newPos = { row: row - 1, col };
-    if (e.key === "ArrowDown") newPos = { row: row + 1, col };
-    if (e.key === "ArrowLeft") newPos = { row, col: col - 1 };
-    if (e.key === "ArrowRight") newPos = { row, col: col + 1 };
+      if (e.key === "ArrowUp") newPos = { row: row - 1, col };
+      if (e.key === "ArrowDown") newPos = { row: row + 1, col };
+      if (e.key === "ArrowLeft") newPos = { row, col: col - 1 };
+      if (e.key === "ArrowRight") newPos = { row, col: col + 1 };
 
-    if (!newPos) return;
-    handleMove(newPos.row, newPos.col);
-  }, [path, handleMove]);
+      if (!newPos) return;
+      handleMove(newPos.row, newPos.col);
+    },
+    [path, handleMove]
+  );
 
   // Touch event handlers for mobile support
-  const handleTouchStart = useCallback((e) => {
-    if (e.cancelable) {
-      e.preventDefault(); // Prevent scrolling and zooming only if event is cancelable
-    }
-    if (gameWon) return;
-    
-    const target = e.target.closest('[data-row]');
-    if (!target) return;
-    
-    const r = parseInt(target.dataset.row);
-    const c = parseInt(target.dataset.col);
-    
-    setIsDragging(true);
-    setDragStartPos({ row: r, col: c });
-    handleMove(r, c);
-  }, [gameWon, handleMove]);
-
-  const handleTouchMove = useCallback((e) => {
-    if (e.cancelable) {
-      e.preventDefault(); // Prevent scrolling only if event is cancelable
-    }
-    if (!isDragging || gameWon) return;
-
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    if (element && element.dataset.row && element.dataset.col) {
-      const r = parseInt(element.dataset.row);
-      const c = parseInt(element.dataset.col);
-      
-      // Only move if we're on a different tile
-      const lastPos = path[path.length - 1];
-      if (r !== lastPos.row || c !== lastPos.col) {
-        handleMove(r, c);
+  const handleTouchStart = useCallback(
+    (e) => {
+      if (e.cancelable) {
+        e.preventDefault(); // Prevent scrolling and zooming only if event is cancelable
       }
-    }
-  }, [isDragging, gameWon, path, handleMove]);
+      if (gameWon) return;
+
+      const target = e.target.closest("[data-row]");
+      if (!target) return;
+
+      const r = parseInt(target.dataset.row);
+      const c = parseInt(target.dataset.col);
+
+      setIsDragging(true);
+      setDragStartPos({ row: r, col: c });
+      handleMove(r, c);
+    },
+    [gameWon, handleMove]
+  );
+
+  const handleTouchMove = useCallback(
+    (e) => {
+      if (e.cancelable) {
+        e.preventDefault(); // Prevent scrolling only if event is cancelable
+      }
+      if (!isDragging || gameWon) return;
+
+      const touch = e.touches[0];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+      if (element && element.dataset.row && element.dataset.col) {
+        const r = parseInt(element.dataset.row);
+        const c = parseInt(element.dataset.col);
+
+        // Only move if we're on a different tile
+        const lastPos = path[path.length - 1];
+        if (r !== lastPos.row || c !== lastPos.col) {
+          handleMove(r, c);
+        }
+      }
+    },
+    [isDragging, gameWon, path, handleMove]
+  );
 
   const handleTouchEnd = useCallback((e) => {
     if (e.cancelable) {
@@ -161,15 +188,21 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
-    
+
     // Add proper touch event listeners with passive: false to allow preventDefault
     const gridElement = gridRef.current;
     if (gridElement) {
-      gridElement.addEventListener("touchstart", handleTouchStart, { passive: false });
-      gridElement.addEventListener("touchmove", handleTouchMove, { passive: false });
-      gridElement.addEventListener("touchend", handleTouchEnd, { passive: false });
+      gridElement.addEventListener("touchstart", handleTouchStart, {
+        passive: false,
+      });
+      gridElement.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
+      gridElement.addEventListener("touchend", handleTouchEnd, {
+        passive: false,
+      });
     }
-    
+
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       if (gridElement) {
@@ -184,7 +217,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Get congratulation message based on time
@@ -223,21 +256,30 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
   };
 
   return (
-    <div style={{ position: "relative" , width: "100%", height: "100vh", boxSizing: "border-box" }}>
-      {/* Game Stats Bar */}
-      <div style={{
-        background: "linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(60, 30, 80, 0.95))",
-        backdropFilter: "blur(20px)",
-        borderRadius: "20px",
-        padding: "15px 25px",
-        marginBottom: "20px",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
         display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center"
-      }}>
-        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: "0 auto",
+      }}
+    >
+      {/* Game Stats Bar */}
+      <div
+        className=" w-[100%]  p-3 rounded-2xl mb-3 md:max-w-md"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(60, 30, 80, 0.95))",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          
+        }}
+      >
+        <div className="flex justify-between gap-6 items-center my-0 mx-auto rounded-md">
           <div style={{ color: "#fff", fontSize: "14px" }}>
             <span style={{ opacity: 0.7 }}>Progress: </span>
             <span style={{ color: "#00ff88", fontWeight: "bold" }}>
@@ -250,36 +292,37 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
               {formatTime(Math.floor((Date.now() - startTime) / 1000))}
             </span>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-        
-          <div style={{ 
-            background: "linear-gradient(45deg, #ff6b6b, #4ecdc4)",
-            backgroundClip: "text",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            fontSize: "16px",
-            fontWeight: "bold"
-          }}>
-            Level {currentLevel || 1}
+          <div
+            style={{
+              background: "linear-gradient(45deg, #ff6b6b, #4ecdc4)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              fontSize: "16px",
+              fontWeight: "bold",
+            }}
+          >
+            Level {currentLevel}
           </div>
         </div>
+        <div></div>
       </div>
 
       {/* Game Grid */}
       <div
         ref={gridRef}
-        className="grid"
+        className="grid min-w-fit"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${cols}, 50px)`,
           gap: "8px",
-          background: "linear-gradient(135deg, rgba(20, 20, 40, 0.9), rgba(40, 20, 60, 0.9))",
+          background:
+            "linear-gradient(135deg, rgba(20, 20, 40, 0.9), rgba(40, 20, 60, 0.9))",
           backdropFilter: "blur(20px)",
           padding: "25px",
           borderRadius: "25px",
           border: "2px solid rgba(255, 255, 255, 0.1)",
-          boxShadow: "0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+          
           touchAction: "none", // Prevent default touch behaviors
         }}
       >
@@ -297,7 +340,11 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
               borderRadius: "12px",
               border: "2px solid",
               position: "relative",
-              cursor: disabled ? "not-allowed" : gameWon ? "default" : "pointer",
+              cursor: disabled
+                ? "not-allowed"
+                : gameWon
+                ? "default"
+                : "pointer",
               transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               display: "flex",
               alignItems: "center",
@@ -319,7 +366,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                 ...tileStyle,
                 background: "linear-gradient(135deg, #00ff88, #00cc6a)",
                 borderColor: "#00ff88",
-                boxShadow: "0 0 30px rgba(0, 255, 136, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2)",
+                boxShadow:
+                  "0 0 30px rgba(0, 255, 136, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2)",
                 transform: "scale(1.05)",
                 color: "#fff",
                 animation: "pulse 2s infinite",
@@ -332,14 +380,17 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                   hsl(${320 + pathIndex * 10}, 70%, ${60 * intensity}%), 
                   hsl(${340 + pathIndex * 10}, 80%, ${45 * intensity}%))`,
                 borderColor: `hsl(${320 + pathIndex * 10}, 80%, 70%)`,
-                boxShadow: `0 0 25px hsla(${320 + pathIndex * 10}, 70%, 60%, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3)`,
+                boxShadow: `0 0 25px hsla(${
+                  320 + pathIndex * 10
+                }, 70%, 60%, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3)`,
                 transform: "scale(1.02)",
                 color: "#fff",
               };
             } else {
               tileStyle = {
                 ...tileStyle,
-                background: "linear-gradient(135deg, rgba(100, 100, 120, 0.3), rgba(60, 60, 80, 0.3))",
+                background:
+                  "linear-gradient(135deg, rgba(100, 100, 120, 0.3), rgba(60, 60, 80, 0.3))",
                 borderColor: "rgba(255, 255, 255, 0.2)",
                 backdropFilter: "blur(10px)",
                 boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
@@ -349,8 +400,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             // Hover effect
             const onMouseEnter = (e) => {
               if (!disabled && !gameWon) {
-                e.target.style.transform = (tileStyle.transform || "") + " translateY(-2px)";
-                e.target.style.boxShadow = tileStyle.boxShadow + ", 0 8px 25px rgba(0, 0, 0, 0.3)";
+                e.target.style.transform =
+                  (tileStyle.transform || "") + " translateY(-2px)";
+                e.target.style.boxShadow =
+                  tileStyle.boxShadow + ", 0 8px 25px rgba(0, 0, 0, 0.3)";
               }
             };
 
@@ -372,7 +425,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                 style={{
                   ...tileStyle,
                   touchAction: "none", // Prevent scrolling on touch
-                  userSelect: "none",  // Prevent text selection
+                  userSelect: "none", // Prevent text selection
                   WebkitUserSelect: "none",
                   WebkitTouchCallout: "none", // Disable iOS callout
                   WebkitTapHighlightColor: "transparent", // Remove tap highlight
@@ -382,17 +435,19 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                 {type === "start" && "🎯"}
                 {disabled && "🚫"}
                 {isInCurrentPath && type !== "start" && (
-                  <span style={{ 
-                    background: "rgba(255, 255, 255, 0.3)",
-                    borderRadius: "50%",
-                    width: "20px",
-                    height: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "12px",
-                    animation: "fadeIn 0.3s ease-out"
-                  }}>
+                  <span
+                    style={{
+                      background: "rgba(255, 255, 255, 0.3)",
+                      borderRadius: "50%",
+                      width: "20px",
+                      height: "20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px",
+                      animation: "fadeIn 0.3s ease-out",
+                    }}
+                  >
                     {pathIndex + 1}
                   </span>
                 )}
@@ -411,8 +466,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                         hsl(${320 + pathIndex * 10}, 80%, 60%), 
                         hsl(${340 + pathIndex * 10}, 90%, 50%))`,
                       borderRadius: "3px",
-                      boxShadow: `0 0 15px hsl(${320 + pathIndex * 10}, 80%, 60%)`,
-                      animation: "connectionGlow 1s ease-in-out"
+                      boxShadow: `0 0 15px hsl(${
+                        320 + pathIndex * 10
+                      }, 80%, 60%)`,
+                      animation: "connectionGlow 1s ease-in-out",
                     }}
                   />
                 )}
@@ -429,8 +486,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                         hsl(${320 + pathIndex * 10}, 80%, 60%), 
                         hsl(${340 + pathIndex * 10}, 90%, 50%))`,
                       borderRadius: "3px",
-                      boxShadow: `0 0 15px hsl(${320 + pathIndex * 10}, 80%, 60%)`,
-                      animation: "connectionGlow 1s ease-in-out"
+                      boxShadow: `0 0 15px hsl(${
+                        320 + pathIndex * 10
+                      }, 80%, 60%)`,
+                      animation: "connectionGlow 1s ease-in-out",
                     }}
                   />
                 )}
@@ -447,8 +506,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                         hsl(${320 + pathIndex * 10}, 80%, 60%), 
                         hsl(${340 + pathIndex * 10}, 90%, 50%))`,
                       borderRadius: "3px",
-                      boxShadow: `0 0 15px hsl(${320 + pathIndex * 10}, 80%, 60%)`,
-                      animation: "connectionGlow 1s ease-in-out"
+                      boxShadow: `0 0 15px hsl(${
+                        320 + pathIndex * 10
+                      }, 80%, 60%)`,
+                      animation: "connectionGlow 1s ease-in-out",
                     }}
                   />
                 )}
@@ -465,8 +526,10 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                         hsl(${320 + pathIndex * 10}, 80%, 60%), 
                         hsl(${340 + pathIndex * 10}, 90%, 50%))`,
                       borderRadius: "3px",
-                      boxShadow: `0 0 15px hsl(${320 + pathIndex * 10}, 80%, 60%)`,
-                      animation: "connectionGlow 1s ease-in-out"
+                      boxShadow: `0 0 15px hsl(${
+                        320 + pathIndex * 10
+                      }, 80%, 60%)`,
+                      animation: "connectionGlow 1s ease-in-out",
                     }}
                   />
                 )}
@@ -485,6 +548,8 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             left: 0,
             right: 0,
             bottom: 0,
+            width: "100vw",
+            height: "100vh",
             background: "transparent",
             backdropFilter: "blur(10px)",
             display: "flex",
@@ -492,116 +557,169 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             justifyContent: "center",
             zIndex: 1000,
             animation: "modalFadeIn 0.5s ease-out",
-           borderRadius: "20px",
+            borderRadius: "20px",
+            padding: "20px",
+            boxSizing: "border-box",
           }}
         >
           {/* Floating particles background */}
-          <div style={{
-            position: "absolute",
-            width: "100%",
-            height: "100%",
-            background: `
+          <div
+            style={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              background: `
               radial-gradient(circle at 20% 50%, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
               radial-gradient(circle at 80% 20%, rgba(78, 205, 196, 0.1) 0%, transparent 50%),
               radial-gradient(circle at 40% 80%, rgba(255, 170, 0, 0.1) 0%, transparent 50%)
-            `
-          }} />
-          
+            `,
+            }}
+          />
+
           <div
             style={{
-              background: "linear-gradient(135deg, rgba(20, 20, 40, 0.95), rgba(60, 30, 80, 0.95))",
+              background:
+                "linear-gradient(135deg, rgba(20, 20, 40, 0.95), rgba(60, 30, 80, 0.95))",
               backdropFilter: "blur(30px)",
               padding: "50px",
               borderRadius: "30px",
               textAlign: "center",
               color: "#fff",
               maxWidth: "500px",
+              width: "90%",
+              maxHeight: "90vh",
+              overflowY: "auto",
               border: "2px solid rgba(255, 255, 255, 0.1)",
-              boxShadow: "0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              boxShadow:
+                "0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
               animation: "modalSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
               position: "relative",
-              overflow: "visible"
+              overflow: "visible",
+              margin: "auto",
             }}
           >
             {/* Celebration Animation */}
-            <div style={{ 
-              fontSize: "50px", 
-              marginBottom: "10px",
-              animation: "celebrationBounce 2s infinite",
-              filter: "drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))"
-            }}>
+            <div
+              style={{
+                fontSize: "50px",
+                marginBottom: "10px",
+                animation: "celebrationBounce 2s infinite",
+                filter: "drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))",
+              }}
+            >
               🎉
             </div>
-            
+
             {/* Animated Title */}
-            <h2 style={{ 
-              margin: "0 0 10px 0", 
-              fontSize: "24px",
-              fontWeight: "bold",
-              background: "linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B, #4ECDC4)",
-              backgroundSize: "300% 300%",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              animation: "gradientShift 3s ease infinite",
-              textShadow: "none",
-              filter: "drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))"
-            }}>
+            <h2
+              style={{
+                margin: "0 0 10px 0",
+                fontSize: "24px",
+                fontWeight: "bold",
+                background:
+                  "linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B, #4ECDC4)",
+                backgroundSize: "300% 300%",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                animation: "gradientShift 3s ease infinite",
+                textShadow: "none",
+                filter: "drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))",
+              }}
+            >
               LEVEL COMPLETE!
             </h2>
-            
+
             {/* Animated Subtitle */}
-            <p style={{ 
-              fontSize: "20px", 
-              margin: "20px 0",
-              background: "linear-gradient(45deg, #fff, #e0e0e0)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              animation: "textGlow 2s ease-in-out infinite alternate"
-            }}>
+            <p
+              style={{
+                fontSize: "20px",
+                margin: "20px 0",
+                background: "linear-gradient(45deg, #fff, #e0e0e0)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                animation: "textGlow 2s ease-in-out infinite alternate",
+              }}
+            >
               {getCongratulationMessage(completionTime)}
             </p>
-            
+
             {/* Enhanced Stats Panel */}
-            <div style={{ 
-              background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))", 
-              padding: "25px", 
-              borderRadius: "20px", 
-              margin: "30px 0",
-              backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.1)"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-around", gap: "20px" }}>
+            <div
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
+                padding: "25px",
+                borderRadius: "20px",
+                margin: "30px 0",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-around",
+                  gap: "20px",
+                }}
+              >
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "24px", marginBottom: "5px" }}>⏱️</div>
-                  <div style={{ fontSize: "18px", fontWeight: "bold", color: "#ffaa00" }}>
+                  <div style={{ fontSize: "24px", marginBottom: "5px" }}>
+                    ⏱️
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#ffaa00",
+                    }}
+                  >
                     {formatTime(completionTime)}
                   </div>
                   <div style={{ fontSize: "12px", opacity: 0.7 }}>Time</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "24px", marginBottom: "5px" }}>🎯</div>
-                  <div style={{ fontSize: "18px", fontWeight: "bold", color: "#4ecdc4" }}>
-                    {currentLevel || 1}
+                  <div style={{ fontSize: "24px", marginBottom: "5px" }}>
+                    🎯
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#4ecdc4",
+                    }}
+                  >
+                    {currentLevel}
                   </div>
                   <div style={{ fontSize: "12px", opacity: 0.7 }}>Level</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "24px", marginBottom: "5px" }}>🔥</div>
-                  <div style={{ fontSize: "18px", fontWeight: "bold", color: "#00ff88" }}>
+                  <div style={{ fontSize: "24px", marginBottom: "5px" }}>
+                    🔥
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                      color: "#00ff88",
+                    }}
+                  >
                     {path.length}
                   </div>
                   <div style={{ fontSize: "12px", opacity: 0.7 }}>Tiles</div>
                 </div>
               </div>
             </div>
-            
+
             {/* Enhanced Action Buttons */}
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+            <div
+              style={{ display: "flex", gap: "10px", justifyContent: "center" }}
+            >
               <button
                 onClick={onRestart}
                 style={{
-                  background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
+                  background:
+                    "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
                   color: "#fff",
                   border: "2px solid rgba(255, 255, 255, 0.2)",
                   padding: "5px 10px",
@@ -614,12 +732,14 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                   boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
                 }}
                 onMouseOver={(e) => {
-                  e.target.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))";
+                  e.target.style.background =
+                    "linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))";
                   e.target.style.transform = "translateY(-3px) scale(1.05)";
                   e.target.style.boxShadow = "0 8px 30px rgba(0, 0, 0, 0.3)";
                 }}
                 onMouseOut={(e) => {
-                  e.target.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))";
+                  e.target.style.background =
+                    "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))";
                   e.target.style.transform = "translateY(0) scale(1)";
                   e.target.style.boxShadow = "0 4px 20px rgba(0, 0, 0, 0.2)";
                 }}
@@ -645,22 +765,24 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
                   }}
                   onMouseOver={(e) => {
                     e.target.style.transform = "translateY(-3px) scale(1.05)";
-                    e.target.style.boxShadow = "0 12px 40px rgba(255, 107, 107, 0.6)";
+                    e.target.style.boxShadow =
+                      "0 12px 40px rgba(255, 107, 107, 0.6)";
                   }}
                   onMouseOut={(e) => {
                     e.target.style.transform = "translateY(0) scale(1)";
-                    e.target.style.boxShadow = "0 8px 30px rgba(255, 107, 107, 0.4)";
+                    e.target.style.boxShadow =
+                      "0 8px 30px rgba(255, 107, 107, 0.4)";
                   }}
                 >
-                  <span style={{ position: "relative", zIndex: 1 }}>🚀 Next Level</span>
+                  <span style={{ position: "relative", zIndex: 1 }}>
+                    🚀 Next Level
+                  </span>
                 </button>
               )}
             </div>
           </div>
         </div>
       )}
-
-      
 
       {/* Enhanced CSS Animations */}
       <style jsx>{`
@@ -674,7 +796,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             transform: scale(1) translateY(0) rotate(0deg);
           }
         }
-        
+
         @keyframes modalFadeIn {
           from {
             opacity: 0;
@@ -683,9 +805,12 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             opacity: 1;
           }
         }
-        
+
         @keyframes celebrationBounce {
-          0%, 20%, 60%, 100% {
+          0%,
+          20%,
+          60%,
+          100% {
             transform: translateY(0) rotate(0deg);
           }
           40% {
@@ -695,7 +820,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             transform: translateY(-15px) rotate(-5deg);
           }
         }
-        
+
         @keyframes gradientShift {
           0% {
             background-position: 0% 50%;
@@ -707,7 +832,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             background-position: 0% 50%;
           }
         }
-        
+
         @keyframes textGlow {
           from {
             filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
@@ -716,19 +841,22 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
           }
         }
-        
+
         @keyframes pulse {
           0% {
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5),
+              0 4px 15px rgba(0, 0, 0, 0.2);
           }
           50% {
-            box-shadow: 0 0 50px rgba(0, 255, 136, 0.8), 0 4px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.8),
+              0 4px 25px rgba(0, 0, 0, 0.3);
           }
           100% {
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5),
+              0 4px 15px rgba(0, 0, 0, 0.2);
           }
         }
-        
+
         @keyframes connectionGlow {
           0% {
             opacity: 0;
@@ -743,7 +871,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             transform: scale(1);
           }
         }
-        
+
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -754,7 +882,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             transform: scale(1);
           }
         }
-        
+
         @keyframes ripple {
           0% {
             transform: scale(0);
@@ -765,7 +893,7 @@ const FillTilesGame = ({ rows, cols, start, disabledTiles, currentLevel, onNextL
             opacity: 0;
           }
         }
-        
+
         /* Real-time progress animation */
         @keyframes progressShine {
           0% {

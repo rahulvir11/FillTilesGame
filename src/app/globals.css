@@ -86,11 +86,7 @@ img {
   height: auto;
 }
 
-/* Game-specific optimizations */
-.game-container {
-  contain: layout style paint;
-  will-change: transform;
-}
+
 
 /* Mobile touch optimizations */
 @media (max-width: 768px) {

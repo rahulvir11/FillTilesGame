@@ -1,7 +1,7 @@
 "use client";
 import FillTilesGame from "@/components/FillTilesGame";
 import { levels } from "@/constant/levels";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Dynamic metadata for better SEO
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,25 @@ export default function Home() {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   // Instructions modal state
   const [showInstructions, setShowInstructions] = useState(false);
+
+  // Load saved level from localStorage on component mount
+  useEffect(() => {
+    const savedLevel = localStorage.getItem('tilesGameCurrentLevel');
+    if (savedLevel) {
+      const levelNumber = parseInt(savedLevel, 10);
+      // Convert level number to index (level 1 = index 0)
+      const levelIndex = Math.max(0, Math.min(levelNumber - 1, levels.length - 1));
+      setCurrentLevelIndex(levelIndex);
+    }
+  }, []);
+
+  // Save level to localStorage whenever currentLevelIndex changes
+  useEffect(() => {
+    // Convert index to level number (index 0 = level 1)
+    const levelNumber = currentLevelIndex + 1;
+    localStorage.setItem('tilesGameCurrentLevel', levelNumber.toString());
+  }, [currentLevelIndex]);
+
   const currentLevel = levels[currentLevelIndex];
   const isLastLevel = currentLevelIndex >= levels.length - 1;
 
@@ -19,14 +38,11 @@ export default function Home() {
     }
   };
 
-  const handleRestart = () => {
-    // Reset to first level
-    setCurrentLevelIndex(0);
-  };
 
-  const restartCurrentLevel = () => {
-    // Force re-render of current level by updating key
-    setCurrentLevelIndex(currentLevelIndex);
+  // Function to reset game progress completely
+  const resetGameProgress = () => {
+    setCurrentLevelIndex(0);
+    localStorage.removeItem('tilesGameCurrentLevel');
   };
 
   return (
@@ -66,9 +82,9 @@ export default function Home() {
           </p>
         </header>
         
-        {/* Game Section with proper ARIA labels */}
+        {/* Game Section with proper ARIA labels - Perfectly Centered */}
         <section 
-          className="game-container" 
+          className="w-full flex items-center justify-center px-4" 
           role="main" 
           aria-label="Tiles Connect Puzzle Game"
           aria-describedby="game-instructions"
@@ -81,7 +97,7 @@ export default function Home() {
             disabledTiles={currentLevel.disabledTiles}
             currentLevel={currentLevelIndex + 1}
             onNextLevel={!isLastLevel ? handleNextLevel : null}
-            onRestart={restartCurrentLevel}
+            onGameReset={resetGameProgress}
           />
         </section>
         
@@ -110,45 +126,56 @@ export default function Home() {
           </p>
         </div>
       </main>
-        {/* Instructions Button */}
+        {/* Instructions Button - Centered at top */}
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          left: "10%",
+          transform: "translateX(-50%)",
+          zIndex: 1000
+        }}>
           <button
             onClick={() => setShowInstructions(true)}
             style={{
               background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
               border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "50%",
-              width: "40px",
-              height: "40px",
+              borderRadius: "50px",
+              padding: "10px 20px",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "18px",
+              fontSize: "14px",
+              fontWeight: "bold",
+              color: "#fff",
               backdropFilter: "blur(10px)",
               transition: "all 0.3s ease",
-              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
-              position: "fixed",
-            top: "10px",
-            right: "10px",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+              gap: "8px"
             }}
             onMouseOver={(e) => {
               e.target.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))";
-              e.target.style.transform = "scale(1.1)";
+              e.target.style.transform = "translateY(-2px) scale(1.05)";
             }}
             onMouseOut={(e) => {
               e.target.style.background = "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))";
-              e.target.style.transform = "scale(1)";
+              e.target.style.transform = "translateY(0) scale(1)";
             }}
           >
-            ❓
+            ❓ 
           </button>
+        </div>
           {/* Instructions Modal */}
       {showInstructions && (
         <div
           style={{
             position: "fixed",
             top: "0",
-            right: "0",
+            left: "0",
+            right: "0", 
+            bottom: "0",
+            width: "100vw",
+            height: "100vh",
             background: "rgba(0, 0, 0, 0.85)",
             backdropFilter: "blur(10px)",
             display: "flex",
@@ -181,7 +208,7 @@ export default function Home() {
             <button
               onClick={() => setShowInstructions(false)}
               style={{
-                position: "fixed",
+                position: "absolute",
                 top: "15px",
                 right: "15px",
                 background: "rgba(255, 255, 255, 0.1)",
@@ -343,6 +370,50 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+      {/* Additional CSS for perfect centering */}
+      <style jsx global>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.7) translateY(-100px) rotate(-10deg);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0) rotate(0deg);
+          }
+        }
+        
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        
+        /* Ensure modals are always perfectly centered */
+        .modal-overlay {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        
+        /* Responsive centering for game container */
+        @media (max-width: 768px) {
+          .game-container {
+            padding: 10px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+      `}</style>
     </>
   );
 }
